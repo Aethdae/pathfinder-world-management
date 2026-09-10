@@ -1,12 +1,11 @@
-use actix_web::{App, Error, HttpServer, Responder, get, post, web::{self, Json}};
-use serde::Serialize;
+use actix_web::{App, Error, HttpResponse, HttpServer, Responder, get, post, web};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sqlite;
+use rusqlite::{Connection, Result, params};
 
 
-#[derive(Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 struct Data{
-    name: String,
     data: Value
 }
 
@@ -24,40 +23,43 @@ async fn health() -> Result<impl Responder, Error> {
 }
 
 #[get("/{name}")]
-async fn index(name: web::Path<String>) -> Result<impl Responder, Error> {
-    let connection   = sqlite::open("pf.db").unwrap();
-    let exe = connection.execute("
+async fn index(_name: web::Path<String>) -> Result<impl Responder, Error> {
+    let connection = Connection::open("./pf.db").unwrap();
+    match connection.execute("
     CREATE TABLE IF NOT EXISTS world(
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
-    data TEXT);
-    INSERT INTO world(name, data)
-    VALUES('test', '{\"test\":\"test\"}')
-    ").unwrap();
-    println!("{:?}, {}", exe, name);
+    data TEXT);", (),){
+        Ok(_) => println!("Ok! Created world table."),
+        Err(err) => println!("Error occurred: {}", err)
+    };
     Ok("Ok")
 }
 
 #[post("/{name}")]
-async fn add_new(name: web::Path<String>, data: web::Data<String>) -> Result<impl Responder, Error> {
-    let connection   = sqlite::open("pf.db").unwrap();
+async fn add_new(name: web::Path<String>, data: web::Json<Data>) -> Result<impl Responder, Error> {
+    let connection = Connection::open("./pf.db").unwrap();
     println!("{}, {:?}", name, data);
-    let data_str = serde_json::to_string(&data).expect("Failed to unpack Json");
-    let command_string = format!("
+    let data_str = serde_json::to_string(&data.data).expect("Failed to unpack Json");
+    match connection.execute("
     CREATE TABLE IF NOT EXISTS world(
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
-    data TEXT);
-    INSERT INTO world(name, data)
-    VALUES({}, {:?})
-    ", name, data_str);
-    let exe = connection.execute(command_string).unwrap();
-    println!("{:?}, {}", exe, name);
-    let data = Data{
-        name: name.to_string(),
+    data TEXT);", (),){
+        Ok(_) => println!("Ok! Created world table."),
+        Err(err) => println!("Error occurred: {}", err)
+    };
+    match connection.execute("INSERT INTO world(name, data)
+    VALUES(?1, ?2)
+    ", (&name.to_string(), &data_str.to_string()), ){
+        Ok(amount) => println!("Ok! Changed {} rows.", amount),
+        Err(err) => println!("Error occurred: {}", err)        
+    };
+    
+    let data_ret = Data{
         data: serde_json::Value::String(data_str)
     };
-    Ok(web::Json(data))
+    Ok(HttpResponse::Ok().json(data_ret))
 }
 
 #[actix_web::main]
