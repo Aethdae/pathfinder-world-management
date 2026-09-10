@@ -1,7 +1,7 @@
 use actix_web::{App, Error, HttpResponse, HttpServer, Responder, get, post, web};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use rusqlite::{Connection, Result, params};
+use rusqlite::{Connection, Result};
 
 
 #[derive(Deserialize, Serialize, Debug)]
