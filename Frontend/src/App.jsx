@@ -1,8 +1,8 @@
 import { Route, Routes } from "react-router";
-import Navbar from "./components/navigation/Navbar";
-import HomePage from "./components/navigation/HomePage";
-import Footer from "./components/navigation/Footer";
+import Footer from "./components/Footer";
 import Place from "./components/Place";
+import Navbar from "./components/Navbar";
+import HomePage from "./components/HomePage";
 
 export default function App() {
   return (

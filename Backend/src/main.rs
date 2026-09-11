@@ -54,7 +54,7 @@ async fn main() -> std::io::Result<()> {
         .service(index)
         .service(health)
         .service(add_new))
-        .bind(("127.0.0.1", 3000))?
+        .bind(("0.0.0.0", 10000))?
         .run()
         .await
 }

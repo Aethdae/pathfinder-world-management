@@ -2,7 +2,7 @@ import { Link } from "react-router";
 import {
   mainNavButtonClasses,
   transitionClasses,
-} from "../../helpers/htmlClasses";
+} from "../helpers/htmlClasses";
 
 export default function Navbar() {
   return (

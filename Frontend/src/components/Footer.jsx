@@ -1,5 +1,5 @@
 import React from "react";
-import { footerClasses } from "../../helpers/htmlClasses";
+import { footerClasses } from "../helpers/htmlClasses";
 
 export default function Footer() {
   return (
