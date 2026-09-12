@@ -10,6 +10,12 @@ struct Data{
     data: Value
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+struct Place{
+    name: String,
+    data: Value
+}
+
 #[derive(Serialize)]
 struct Healthy{
     health: String
@@ -24,10 +30,18 @@ async fn health() -> Result<impl Responder, Error> {
 }
 
 #[get("/{name}")]
-async fn index(_name: web::Path<String>) -> Result<impl Responder, Error> {
-    let _connection = Connection::open("./pf.db").unwrap();
-    
-    Ok("Ok")
+async fn index(name: web::Path<String>) -> Result<impl Responder, Error> {
+    let connection = Connection::open("./pf.db").unwrap();
+    let mut statement = connection.prepare("SELECT name, data 
+    FROM world WHERE name = ?1").expect("Error preparing statement for SQL.");
+    let iter = statement.query_row([name.to_string()], |row| {
+        Ok(Place{
+            name: row.get(0)?,
+            data: serde_json::Value::String(row.get(1)?)
+        })
+    }).expect("Error parsing data from table.");
+
+    Ok(web::Json(iter))
 }
 
 #[post("/{name}")]

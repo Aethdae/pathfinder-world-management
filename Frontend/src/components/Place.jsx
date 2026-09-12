@@ -9,11 +9,13 @@ export default function Place() {
   const [content, setContent] = useState({});
   async function getData() {
     try {
-      const res = await fetch(MAIN_URL + `/${params.city}`);
+      console.log();
+      const res = await fetch(MAIN_URL + `/${params.place}`);
       if (!res.ok) {
         throw new Error("Failed to fetch.");
       }
       const { name, data } = await res.json();
+      console.log(name, data);
       if (data) {
         setContent(data);
       }
@@ -21,5 +23,8 @@ export default function Place() {
       console.error(error);
     }
   }
+  useEffect(() => {
+    getData();
+  }, []);
   return <div>place</div>;
 }
