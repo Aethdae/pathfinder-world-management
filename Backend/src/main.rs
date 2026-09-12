@@ -1,5 +1,6 @@
 use actix_web::{App, Error, HttpResponse, HttpServer, Responder, get, post, web};
 use serde::{Deserialize, Serialize};
+use actix_cors::Cors;
 use serde_json::Value;
 use rusqlite::{Connection, Result};
 
@@ -50,10 +51,19 @@ async fn add_new(name: web::Path<String>, data: web::Json<Data>) -> Result<impl 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     init_db().await;
-    HttpServer::new(|| App::new()
+
+    HttpServer::new(|| {
+        let cors = Cors::default()
+        .allowed_origin("https://pathfinder.aethdae.com")
+        .allowed_methods(vec!["GET", "POST"])
+        .allow_any_header()
+        .max_age(3600);
+
+        App::new()
         .service(index)
         .service(health)
-        .service(add_new))
+        .service(add_new)
+        .wrap(cors)})
         .bind(("0.0.0.0", 10000))?
         .run()
         .await

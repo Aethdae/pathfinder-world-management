@@ -21,5 +21,5 @@ export default function Place() {
       console.error(error);
     }
   }
-  return <div></div>;
+  return <div>place</div>;
 }
