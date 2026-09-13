@@ -9,15 +9,16 @@ export default function Place() {
   const [content, setContent] = useState({});
   async function getData() {
     try {
-      console.log();
       const res = await fetch(MAIN_URL + `/${params.place}`);
       if (!res.ok) {
         throw new Error("Failed to fetch.");
       }
-      const { name, data } = await res.json();
-      console.log(name, data);
-      if (data) {
-        setContent(data);
+      const result = await res.json();
+      console.log(result);
+      console.log(result.result);
+      console.log(result.result[0].results[0]);
+      if (result.result[0].results[0].id) {
+        setContent(result.result[0].results[0]);
       }
     } catch (error) {
       console.error(error);

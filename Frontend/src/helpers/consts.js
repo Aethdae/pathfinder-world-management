@@ -1,4 +1,4 @@
-export const MAIN_URL = "https://pathfinder-world-management.onrender.com/";
+export const MAIN_URL = "https://pathfinder-world-management.onrender.com";
 export const FLASK_GET_CITIES_URL = MAIN_URL + "/api/cities";
 export const FLASK_GET_NPCS_URL = MAIN_URL + "/api/npcs";
 export const FLASK_GET_CONTINENTS_URL = MAIN_URL + "/api/continents";

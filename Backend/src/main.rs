@@ -62,21 +62,6 @@ struct SqlSend{
     params: Vec<String>
 }
 
-// #[event(fetch, respond_with_errors)]
-// async fn get_place(request: Request, env: Env, _ctx: Context) -> Result<Response>{
-//     Router::new().get_async("/:name", |_, ctx| async move {
-//         let name = ctx.param("name").into();
-//         let d1 = ctx.env.d1("pf-db")?;
-//         let statement = d1.prepare("SELECT * FROM world WHERE name = ?1");
-//         let query = statement.bind(&[name])?;
-//         let result = query.first::<Place>(None).await?;
-//         match result {
-//             Some(place) => Response::from_json(&[place]),
-//             None => Response::error("Not found", 404),
-//         }
-//     }).run(request, env).await
-// }
-
 #[derive(Serialize)]
 struct Healthy{
     health: String
@@ -100,7 +85,7 @@ async fn index(name: web::Path<String>) -> Result<impl Responder, Error> {
     println!("Attempting fetch..");
     let mut headers = HashMap::new();
     headers.insert("Authorization".to_string(), format!("Bearer {cloudflare_api_token}"));
-    
+
     let fetch_config = FetchConfig{
         timeout_ms: Some(2000u64),
         headers: Some(headers),
