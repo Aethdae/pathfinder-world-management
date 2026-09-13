@@ -1,10 +1,11 @@
 use actix_web::{App, Error, HttpResponse, HttpServer, Responder, get, post, web};
 use serde::{Deserialize, Serialize};
 use actix_cors::Cors;
+use std::{collections::HashMap, vec};
 use serde_json::Value;
 use rusqlite::{Connection, Result};
 use env_file_reader::read_file;
-
+use rust_fetch::{Fetch, FetchConfig, FetchOptions, FetchResponse};
 
 #[derive(Deserialize, Serialize, Debug)]
 struct Data{
@@ -12,10 +13,53 @@ struct Data{
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-struct Place{
+struct SqlReturn{
+    result: Vec<ResArray>,
+    errors: Vec<String>,
+    messages: Vec<String>,
+    success: bool
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct ResArray{
+    results: Vec<Results>,
+    success: bool,
+    meta: Meta
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct Results{
     id: i32,
     name: String,
-    data: Value
+    data: String
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct Timings{
+    sql_duration_ms: f32
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct Meta{
+    served_by: String,
+    served_by_region: String,
+    served_by_colo: String,
+    served_by_primary: bool,
+    timings: Timings,
+    duration: f32,
+    changes: i32,
+    last_row_id: i32,
+    changed_db: bool,
+    size_after: i32,
+    rows_read: i32,
+    rows_written: i32,
+    total_attempts: i32
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct SqlSend{
+    sql: String,
+    params: Vec<String>
 }
 
 // #[event(fetch, respond_with_errors)]
@@ -53,19 +97,46 @@ async fn index(name: web::Path<String>) -> Result<impl Responder, Error> {
     let cloudflare_account_id = &env_vars["CLOUDFLARE_ACCOUNT_ID"];
     let d1_database_uuid = &env_vars["D1_DATABASE_UUID"];
 
-    println!("{}, \n{}, \n{}", cloudflare_account_id, cloudflare_api_token, d1_database_uuid);
-    let connection = Connection::open("./pf.db").unwrap();
-    let mut statement = connection.prepare("SELECT name, data 
-    FROM world WHERE name = ?1").expect("Error preparing statement for SQL.");
-    let iter = statement.query_row([name.to_string()], |row| {
-        Ok(Place{
-            id: 1,
-            name: row.get(0)?,
-            data: serde_json::Value::String(row.get(1)?)
-        })
-    }).expect("Error parsing data from table.");
+    println!("Attempting fetch..");
+    let mut headers = HashMap::new();
+    headers.insert("Authorization".to_string(), format!("Bearer {cloudflare_api_token}"));
+    
+    let fetch_config = FetchConfig{
+        timeout_ms: Some(2000u64),
+        headers: Some(headers),
+        content_type: rust_fetch::ContentType::Json,
+        accept: rust_fetch::ContentType::Json
+    };
 
-    Ok(web::Json(iter))
+    let url = format!("https://api.cloudflare.com/client/v4/accounts/{cloudflare_account_id}/d1/database/{d1_database_uuid}");
+    let client = Fetch::new(&url, Some(fetch_config)).unwrap();
+
+    let query = SqlSend{
+        sql: "SELECT * FROM world WHERE name = ?;".to_string(),
+        params: vec![name.to_string()]
+    };
+
+    let mut headers = HashMap::new();
+    headers.insert("Authorization".to_string(), format!("Bearer {cloudflare_api_token}"));
+    
+    let res: FetchResponse<SqlReturn> = client.post("/query", Some(query), Some(FetchOptions{
+        headers: Some(headers),
+        content_type: Some(rust_fetch::ContentType::Json),
+        ..Default::default()
+    })).await.unwrap();
+
+    // let connection = Connection::open("./pf.db").unwrap();
+    // let mut statement = connection.prepare("SELECT name, data 
+    // FROM world WHERE name = ?1").expect("Error preparing statement for SQL.");
+    // let iter = statement.query_row([name.to_string()], |row| {
+    //     Ok(Place{
+    //         id: 1,
+    //         name: row.get(0)?,
+    //         data: serde_json::Value::String(row.get(1)?)
+    //     })
+    // }).expect("Error parsing data from table.");
+
+    Ok(web::Json(res.body))
 }
 
 #[post("/{name}")]
