@@ -29,9 +29,9 @@ struct ResArray{
 
 #[derive(Deserialize, Serialize, Debug)]
 struct Results{
-    id: i32,
-    name: String,
-    data: String
+    id: Option<i32>,
+    name: Option<String>,
+    data: Option<String>
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -59,7 +59,7 @@ struct Meta{
 #[derive(Deserialize, Serialize, Debug)]
 struct SqlSend{
     sql: String,
-    params: Vec<String>
+    params: Option<Vec<String>>
 }
 
 #[derive(Serialize)]
@@ -97,7 +97,7 @@ async fn get_name(name: web::Path<String>) -> Result<impl Responder, Error> {
 
     let query = SqlSend{
         sql: "SELECT * FROM world WHERE name = ?;".to_string(),
-        params: vec![name.to_string()]
+        params: Some(vec![name.to_string()])
     };
 
     let mut headers = HashMap::new();
@@ -112,8 +112,9 @@ async fn get_name(name: web::Path<String>) -> Result<impl Responder, Error> {
     Ok(web::Json(res.body))
 }
 
-#[get("/fetchRand")]
+#[get("/api/fetchRand")]
 async fn get_rand() -> Result<impl Responder, Error> {
+
     let env_vars = read_file("./.env")?;
     let cloudflare_api_token = &env_vars["CLOUDFLARE_API_TOKEN"];
     let cloudflare_account_id = &env_vars["CLOUDFLARE_ACCOUNT_ID"];
@@ -133,12 +134,13 @@ async fn get_rand() -> Result<impl Responder, Error> {
     let client = Fetch::new(&url, Some(fetch_config)).unwrap();
 
     let query = SqlSend{
-        sql: "SELECT name FROM world;".to_string(),
-        params: vec!["".to_string()]
+        sql: "SELECT name FROM world".to_string(),
+        params: None
     };
 
     let mut headers = HashMap::new();
     headers.insert("Authorization".to_string(), format!("Bearer {cloudflare_api_token}"));
+
 
     let res: FetchResponse<SqlReturn> = client.post("/query", Some(query), Some(FetchOptions{
     headers: Some(headers),
@@ -177,8 +179,6 @@ async fn add_new(name: web::Path<String>, data: web::Json<Data>) -> Result<impl 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
 
-    init_db().await;
-
     HttpServer::new(|| {
         let cors = Cors::default()
         .allowed_origin("https://pathfinder.aethdae.com")
@@ -197,7 +197,7 @@ async fn main() -> std::io::Result<()> {
         .await
 }
 
-async fn init_db() {
+async fn _init_db() {
     println!("Setting up DB..");
     let connection = Connection::open("./pf.db").unwrap();
     match connection.execute("
