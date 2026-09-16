@@ -109,17 +109,6 @@ async fn get_name(name: web::Path<String>) -> Result<impl Responder, Error> {
         ..Default::default()
     })).await.unwrap();
 
-    // let connection = Connection::open("./pf.db").unwrap();
-    // let mut statement = connection.prepare("SELECT name, data 
-    // FROM world WHERE name = ?1").expect("Error preparing statement for SQL.");
-    // let iter = statement.query_row([name.to_string()], |row| {
-    //     Ok(Place{
-    //         id: 1,
-    //         name: row.get(0)?,
-    //         data: serde_json::Value::String(row.get(1)?)
-    //     })
-    // }).expect("Error parsing data from table.");
-
     Ok(web::Json(res.body))
 }
 
@@ -155,8 +144,7 @@ async fn get_rand() -> Result<impl Responder, Error> {
     headers: Some(headers),
     content_type: Some(rust_fetch::ContentType::Json),
     ..Default::default()
-    })).await
-    .unwrap();
+    })).await.unwrap();
 
     Ok(web::Json(res.body))
 }
