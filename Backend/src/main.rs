@@ -76,13 +76,12 @@ async fn health() -> Result<impl Responder, Error> {
 }
 
 #[get("/{name}")]
-async fn index(name: web::Path<String>) -> Result<impl Responder, Error> {
+async fn get_name(name: web::Path<String>) -> Result<impl Responder, Error> {
     let env_vars = read_file("./.env")?;
     let cloudflare_api_token = &env_vars["CLOUDFLARE_API_TOKEN"];
     let cloudflare_account_id = &env_vars["CLOUDFLARE_ACCOUNT_ID"];
     let d1_database_uuid = &env_vars["D1_DATABASE_UUID"];
 
-    println!("Attempting fetch..");
     let mut headers = HashMap::new();
     headers.insert("Authorization".to_string(), format!("Bearer {cloudflare_api_token}"));
 
@@ -120,6 +119,44 @@ async fn index(name: web::Path<String>) -> Result<impl Responder, Error> {
     //         data: serde_json::Value::String(row.get(1)?)
     //     })
     // }).expect("Error parsing data from table.");
+
+    Ok(web::Json(res.body))
+}
+
+#[get("/fetchRand")]
+async fn get_rand() -> Result<impl Responder, Error> {
+    let env_vars = read_file("./.env")?;
+    let cloudflare_api_token = &env_vars["CLOUDFLARE_API_TOKEN"];
+    let cloudflare_account_id = &env_vars["CLOUDFLARE_ACCOUNT_ID"];
+    let d1_database_uuid = &env_vars["D1_DATABASE_UUID"];
+
+    let mut headers = HashMap::new();
+    headers.insert("Authorization".to_string(), format!("Bearer {cloudflare_api_token}"));
+    
+    let fetch_config = FetchConfig{
+        timeout_ms: Some(2000u64),
+        headers: Some(headers),
+        content_type: rust_fetch::ContentType::Json,
+        accept: rust_fetch::ContentType::Json
+    };
+
+    let url = format!("https://api.cloudflare.com/client/v4/accounts/{cloudflare_account_id}/d1/database/{d1_database_uuid}");
+    let client = Fetch::new(&url, Some(fetch_config)).unwrap();
+
+    let query = SqlSend{
+        sql: "SELECT name FROM world".to_string(),
+        params: vec!["".to_string()]
+    };
+
+    let mut headers = HashMap::new();
+    headers.insert("Authorization".to_string(), format!("Bearer {cloudflare_api_token}"));
+
+    let res: FetchResponse<SqlReturn> = client.post("/query", Some(query), Some(FetchOptions{
+    headers: Some(headers),
+    content_type: Some(rust_fetch::ContentType::Json),
+    ..Default::default()
+    })).await
+    .unwrap();
 
     Ok(web::Json(res.body))
 }
@@ -162,9 +199,10 @@ async fn main() -> std::io::Result<()> {
         .max_age(3600);
 
         App::new()
-        .service(index)
+        .service(get_name)
         .service(health)
         .service(add_new)
+        .service(get_rand)
         .wrap(cors)})
         .bind(("0.0.0.0", 10000))?
         .run()

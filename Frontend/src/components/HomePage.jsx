@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { MAIN_URL } from "../helpers/consts";
+import { RAND_URL } from "../helpers/consts";
 import { homePageCardClasses } from "../helpers/htmlClasses";
 import { Link } from "react-router";
 
 export default function HomePage() {
+  const [rand, setRand] = useState({});
   async function pingBackend() {
-    fetch(MAIN_URL);
+    const data = await fetch(RAND_URL);
+    const res = await data.json();
+    setRand(res);
+    console.log(res);
   }
   useEffect(() => {
     pingBackend();
