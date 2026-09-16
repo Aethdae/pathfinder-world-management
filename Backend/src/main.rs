@@ -196,16 +196,3 @@ async fn main() -> std::io::Result<()> {
         .run()
         .await
 }
-
-async fn _init_db() {
-    println!("Setting up DB..");
-    let connection = Connection::open("./pf.db").unwrap();
-    match connection.execute("
-    CREATE TABLE IF NOT EXISTS world(
-    id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL,
-    data TEXT);", (),){
-        Ok(_) => println!("Ok! Created DB and world table."),
-        Err(err) => println!("Error occurred: {}", err)
-    };
-}
