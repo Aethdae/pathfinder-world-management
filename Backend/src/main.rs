@@ -144,7 +144,7 @@ async fn get_rand() -> Result<impl Responder, Error> {
     let client = Fetch::new(&url, Some(fetch_config)).unwrap();
 
     let query = SqlSend{
-        sql: "SELECT name FROM world".to_string(),
+        sql: "SELECT name FROM world;".to_string(),
         params: vec!["".to_string()]
     };
 
